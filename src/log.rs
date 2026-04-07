@@ -6,9 +6,9 @@ use crate::error::TaktError;
 
 #[derive(Clone, Debug)]
 pub(crate) struct Entry {
-    start: NaiveDateTime,
-    end: Option<NaiveDateTime>,
-    tag: String,
+    pub(crate) start: NaiveDateTime,
+    pub(crate) end: Option<NaiveDateTime>,
+    pub(crate) tag: String,
 }
 
 #[derive(Debug)]
