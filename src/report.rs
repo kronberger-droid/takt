@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use chrono::{Datelike, Local, Months, NaiveDate, NaiveDateTime, TimeDelta};
 
@@ -21,8 +21,11 @@ impl ReportRange {
         let today = now.date();
 
         // TODO: implement these two closures
-        let start_of_week = |d: NaiveDate| -> NaiveDate { todo!() };
-        let start_of_month = |d: NaiveDate| -> NaiveDate { todo!() };
+        let start_of_week = |d: NaiveDate| -> NaiveDate {
+            d - TimeDelta::days(d.weekday().num_days_from_monday() as i64)
+        };
+        let start_of_month =
+            |d: NaiveDate| -> NaiveDate { d.with_day(1).unwrap() };
 
         let (start, end) = match self {
             Self::This(Period::Day) => (today, now),
@@ -42,20 +45,61 @@ impl ReportRange {
             }
         };
 
-        (start.into(), end.into())
+        (start.into(), end)
     }
 }
 
 pub struct Report {
-    totals: HashMap<String, TimeDelta>,
+    totals: BTreeMap<String, TimeDelta>,
 }
 
 impl Report {
     pub fn generate(entries: &[Entry], range: ReportRange) -> Report {
-        todo!()
+        let mut totals = BTreeMap::new();
+        let (start, _) = range.date_range();
+        let entries_range =
+            entries.iter().filter(|&entry| entry.start >= start);
+
+        for entry in entries_range {
+            let duration =
+                entry.end.unwrap_or(Local::now().naive_local()) - entry.start;
+
+            if let Some(total) = totals.get_mut(&entry.tag) {
+                *total += duration;
+            } else {
+                totals.insert(entry.tag.clone(), duration);
+            };
+        }
+        Report { totals }
     }
 
     pub fn display(&self) -> String {
-        todo!()
+        let mut output = String::new();
+        let total: TimeDelta = self.totals.values().sum();
+
+        let width = self.totals.keys().map(|k| k.len()).max().unwrap_or(0);
+
+        for (tag, duration) in &self.totals {
+            let hours = duration.num_hours();
+            let minutes = duration.num_minutes() - hours * 60;
+            let entry_str = format!(
+                "{:<width$} {}h {}m\n",
+                tag,
+                duration.num_hours(),
+                minutes
+            );
+            output.push_str(&entry_str);
+        }
+
+        let total_hours = total.num_hours();
+        let total_minutes = total.num_minutes() - total_hours * 60;
+        let total_tag = "Total";
+
+        output.push_str(&format!(
+            "{:<width$} {}h {}m\n",
+            total_tag, total_hours, total_minutes
+        ));
+
+        output
     }
 }
