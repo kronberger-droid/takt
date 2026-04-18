@@ -2,6 +2,15 @@
 name = "takt"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
+authors = ["Martin Kronberger <kronberger@proton.me>"]
+description = "Time tracking CLI with hierarchical tags and human-readable storage."
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/kronberger-droid/takt"
+homepage = "https://github.com/kronberger-droid/takt"
+keywords = ["time-tracking", "cli", "productivity", "timer"]
+categories = ["command-line-utilities"]
 
 [[bin]]
 name = "takt"
