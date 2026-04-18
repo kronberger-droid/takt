@@ -12,6 +12,7 @@ mod error;
 mod log;
 mod model;
 mod report;
+mod server;
 mod store;
 mod tags;
 
@@ -39,6 +40,13 @@ enum Commands {
     Report {
         #[command(subcommand)]
         range: Option<ReportRange>,
+    },
+    /// Run the HTTP server (v0.3 Phase 2: empty router, no endpoints yet)
+    Serve {
+        #[arg(long, default_value = "8080")]
+        port: u16,
+        #[arg(long, default_value = "127.0.0.1")]
+        addr: std::net::IpAddr,
     },
 }
 
@@ -95,6 +103,13 @@ fn run() -> Result<(), TaktError> {
             let entries = store.entries_between(start, end)?;
             let report = Report::generate(&entries, range);
             print!("{}", report.display());
+        }
+        Commands::Serve { port, addr } => {
+            // Bridge sync CLI → async server: spin up a tokio runtime just
+            // for the serve command. The rest of the CLI stays sync.
+            let socket = std::net::SocketAddr::new(addr, port);
+            let runtime = tokio::runtime::Runtime::new()?;
+            runtime.block_on(server::run(socket))?;
         }
         Commands::Tag { action } => match action {
             TagCommands::Add { path } => {
