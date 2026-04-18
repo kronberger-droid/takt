@@ -121,3 +121,32 @@ impl Store for FlatStore {
         tag_tree.resolve(name)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::store_tests;
+    use tempfile::TempDir;
+
+    /// Each test gets its own tempdir so the shared harness can `start`/`stop`
+    /// without leaking state across tests or onto the developer's real
+    /// `$XDG_DATA_HOME/takt/` directory.
+    fn new_store() -> FlatStore {
+        let dir = TempDir::new().unwrap();
+        // Leak the TempDir: v0.3 tests are short-lived and OS cleanup handles it.
+        // A cleaner solution wraps FlatStore in a test guard that owns TempDir.
+        let path = dir.keep();
+        FlatStore::new(path)
+    }
+
+    store_tests!(
+        new_store,
+        active_is_none_on_empty,
+        start_creates_entry,
+        start_autostops_active,
+        stop_returns_completed_entry,
+        stop_errors_without_active,
+        tag_add_then_resolve_leaf,
+        tag_list_renders_tree,
+    );
+}

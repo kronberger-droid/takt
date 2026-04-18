@@ -8,7 +8,7 @@ struct TagNode {
     children: Vec<TagNode>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct TagTree {
     root: Vec<TagNode>,
 }
