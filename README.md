@@ -48,7 +48,12 @@ Core tracking with hierarchical tags and human-readable storage.
 | `takt status` | Show what's running and for how long |
 | `takt tag add <path>` | Add a tag (e.g. `work/project-x/new-task`) |
 | `takt tag list` | Show the tag tree |
-| `takt report [today\|week\|month]` | Time per tag, rolled up hierarchically |
+| `takt report this <day\|week\|month>` | Time per tag for the current period |
+| `takt report last <n> <day\|week\|month>` | Time per tag for the last N units |
+
+Tags resolve by leaf name when unambiguous, so `takt start fix-bug` works if `fix-bug` appears once in the tree. Ambiguous names show all matching paths; unknown names error out.
+
+Report spans that cross monthly log files are stitched automatically — `takt report last 3 month` reads all four month files and warns on stderr for any that are missing.
 
 ### Progress
 
@@ -57,9 +62,9 @@ Core tracking with hierarchical tags and human-readable storage.
 - [x] Log format — parse, write, load, save
 - [x] Tracking — start, stop
 - [x] Wire into CLI — tag add, tag list, start, stop
-- [ ] Status command
-- [ ] Reporting — aggregate by tag, time range
-- [ ] Error handling for malformed tag files
+- [x] Status command
+- [x] Reporting — aggregate by tag, time range
+- [x] Error handling for malformed tag files
 
 ## v0.2 — Server mode & shared use
 
