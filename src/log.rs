@@ -3,16 +3,10 @@ use std::{io, path::Path};
 use chrono::NaiveDateTime;
 
 use crate::error::TaktError;
-
-#[derive(Clone, Debug)]
-pub(crate) struct Entry {
-    pub(crate) start: NaiveDateTime,
-    pub(crate) end: Option<NaiveDateTime>,
-    pub(crate) tag: String,
-}
+pub(crate) use crate::model::Entry;
 
 #[derive(Debug)]
-pub struct TaskLog {
+pub(crate) struct TaskLog {
     entries: Vec<Entry>,
 }
 
