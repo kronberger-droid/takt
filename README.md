@@ -82,26 +82,33 @@ Report spans that cross monthly log files are stitched automatically — `takt r
 - [x] Reporting — aggregate by tag, time range
 - [x] Error handling for malformed tag files
 
-## v0.2 — Server mode & shared use
+## v0.2 — Storage abstraction (pure refactor)
 
-Make takt hostable so multiple users can track on a shared server.
+No user-visible changes. Introduces a `Store` trait with the verbs the CLI needs (`start`, `stop`, `active`, `entries_between`, `tag_add`, `tag_list`, `tag_resolve`) and migrates the CLI to go through it. The only implementation is `FlatStore`, wrapping the current file-backed logic.
 
-Two cargo features:
-- `local` (default) — current behavior, flat files, single user
-- `server` — web API, sled database, multi-user
+Sets the stage for v0.3 to add database-backed and remote implementations without changing the CLI layer.
+
+## v0.3 — Server mode & shared use
+
+Make takt hostable so multiple users can track on a shared server. A single binary contains both client and server code; mode is chosen at runtime, not at compile time (so a desktop can double as its own server).
 
 ### Scope
 
 | Area | Description |
 |---|---|
-| Storage trait | Abstract storage behind a trait so flat-file and sled backends plug in |
-| sled backend | Implement storage trait with sled for concurrent access |
+| SQLite backend | `SqliteStore` implementation of the `Store` trait via `rusqlite` |
 | Web API (axum) | REST endpoints: `POST /start`, `POST /stop`, `GET /status`, `GET /report`, `GET /tags`, `POST /tags` |
 | Auth | Simple token-based auth, one token per user |
-| Multi-user | Separate data per user, keyed by user ID in sled |
-| CLI server mode | `takt --server http://host:port` — CLI sends HTTP instead of local file access |
-| Local fallback | Queue actions locally when server is unreachable, sync on reconnect |
+| Multi-user | Per-user data in SQLite, keyed by user id |
 | `takt serve` | New subcommand to start the server |
+
+## v0.4 — Remote client
+
+| Area | Description |
+|---|---|
+| CLI server mode | `takt --server http://host:port` — CLI uses `RemoteStore` (HTTP) instead of local files |
+| Config | Persistent `~/.config/takt/config.toml` for server URL + token |
+| Local fallback | Queue actions locally when server is unreachable, sync on reconnect |
 
 ### Out of scope for v0.2
 
