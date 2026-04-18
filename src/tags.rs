@@ -9,7 +9,7 @@ struct TagNode {
 }
 
 #[derive(Debug)]
-pub struct TagTree {
+pub(crate) struct TagTree {
     root: Vec<TagNode>,
 }
 

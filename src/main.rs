@@ -1,18 +1,18 @@
 use std::{path::PathBuf, process::ExitCode};
 
-use chrono::Datelike;
 use clap::{Parser, Subcommand};
 
 use crate::{
     error::TaktError,
-    log::TaskLog,
     report::{Period, Report, ReportRange},
-    tags::TagTree,
+    store::{FlatStore, Store},
 };
 
 mod error;
 mod log;
+mod model;
 mod report;
+mod store;
 mod tags;
 
 #[derive(Parser)]
@@ -62,53 +62,47 @@ fn main() -> ExitCode {
 
 fn run() -> Result<(), TaktError> {
     let cli = Cli::parse();
-    let tags_path = data_dir()?.join("tags");
+    let mut store: Box<dyn Store> = Box::new(FlatStore::new(data_dir()?));
 
     match cli.command {
         Commands::Start { tag } => {
-            let tree = TagTree::load(&tags_path)?;
-            let resolved = tree.resolve(&tag)?;
-            let log_path = log_path_for_month(0)?;
-            let mut log = TaskLog::load(&log_path)?;
-            log.start(&resolved)?;
-            log.save(&log_path)?;
+            let resolved_tag = store.tag_resolve(&tag)?;
+            store.start(&resolved_tag)?;
         }
         Commands::Stop => {
-            let (mut active, path) = find_active_log()?;
-            active.stop()?;
-            active.save(&path)?;
+            store.stop()?;
         }
         Commands::Status => {
-            let (log, _) = find_active_log()?;
-            let active = log.active().ok_or(TaktError::NoActiveTask)?;
+            let log = store.active()?;
+            if let Some(active) = log {
+                let tag = &active.tag;
+                let elapsed = chrono::Local::now().naive_local() - active.start;
 
-            let tag = &active.tag;
-            let elapsed = chrono::Local::now().naive_local() - active.start;
+                let hours = elapsed.num_hours();
+                let minutes = elapsed.num_minutes() % 60;
 
-            let hours = elapsed.num_hours();
-            let minutes = elapsed.num_minutes() % 60;
-
-            println!("Tracking: {tag}");
-            println!("Elapsed: {hours}h {minutes}m")
+                println!("Tracking: {tag}");
+                println!("Elapsed: {hours}h {minutes}m")
+            } else {
+                println!("Not tracking anything.");
+            }
         }
         Commands::Report { range } => {
             let range = range.unwrap_or(ReportRange::This {
                 period: Period::Week,
             });
-            let entries = gather_entries_for_range(&range)?;
+            let (start, end) = range.date_range();
+            let entries = store.entries_between(start, end)?;
             let report = Report::generate(&entries, range);
             print!("{}", report.display());
         }
         Commands::Tag { action } => match action {
             TagCommands::Add { path } => {
-                let mut tree = TagTree::load(&tags_path)?;
-                tree.add(&path);
-                tree.save(&tags_path)?;
+                store.tag_add(&path)?;
                 println!("added tag: {path}");
             }
             TagCommands::List => {
-                let tree = TagTree::load(&tags_path)?;
-                print! {"{}", tree.write()};
+                print! {"{}", store.tag_list()?};
             }
         },
     }
@@ -116,60 +110,6 @@ fn run() -> Result<(), TaktError> {
     Ok(())
 }
 
-/// Collect all log entries that could fall inside `range`.
-/// Missing monthly files are silently skipped — only malformed ones warn.
-fn gather_entries_for_range(
-    range: &ReportRange,
-) -> Result<Vec<log::Entry>, TaktError> {
-    let (start, _) = range.date_range();
-    let today = chrono::Local::now().date_naive();
-
-    let mut cursor = start.date().with_day(1).unwrap();
-    let end_month = today.with_day(1).unwrap();
-    let mut entries = Vec::new();
-
-    while cursor <= end_month {
-        let path = log_path_for_date(cursor)?;
-        if path.exists() {
-            match TaskLog::load(&path) {
-                Ok(log) => entries.extend(log.entries().iter().cloned()),
-                Err(e) => eprintln!(
-                    "warning: failed to load {} ({e}) — skipped",
-                    cursor.format("%Y-%m")
-                ),
-            }
-        }
-        cursor = cursor + chrono::Months::new(1);
-    }
-    Ok(entries)
-}
-
-fn find_active_log() -> Result<(TaskLog, PathBuf), TaktError> {
-    let path = log_path_for_month(0)?;
-    let log = TaskLog::load(&path)?;
-    if log.active().is_some() {
-        return Ok((log, path));
-    }
-
-    let prev_path = log_path_for_month(1)?;
-    let prev_log = TaskLog::load(&prev_path)?;
-    if prev_log.active().is_some() {
-        return Ok((prev_log, prev_path));
-    }
-
-    Err(TaktError::NoActiveTask)
-}
-
 fn data_dir() -> Result<PathBuf, TaktError> {
     Ok(dirs::data_dir().ok_or(TaktError::NoDataDir)?.join("takt"))
-}
-
-fn log_path_for_month(months_ago: u32) -> Result<PathBuf, TaktError> {
-    let date =
-        chrono::Local::now().date_naive() - chrono::Months::new(months_ago);
-    log_path_for_date(date)
-}
-
-fn log_path_for_date(date: chrono::NaiveDate) -> Result<PathBuf, TaktError> {
-    Ok(data_dir()?.join(format!("log/{}.takt", date.format("%Y-%m"))))
 }
