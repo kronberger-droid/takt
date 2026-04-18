@@ -1,9 +1,18 @@
 use std::{io, path::Path};
 
-use chrono::NaiveDateTime;
+use chrono::{NaiveDateTime, Timelike};
 
 use crate::error::TaktError;
 pub(crate) use crate::model::Entry;
+
+/// Wall clock truncated to whole seconds — matches the precision of the
+/// `%Y-%m-%d %H:%M:%S` format used in the on-disk log.
+fn now_seconds() -> NaiveDateTime {
+    chrono::Local::now()
+        .naive_local()
+        .with_nanosecond(0)
+        .expect("with_nanosecond(0) is always valid")
+}
 
 #[derive(Debug)]
 pub(crate) struct TaskLog {
@@ -109,7 +118,7 @@ impl TaskLog {
             self.stop()?;
         }
         let entry = Entry {
-            start: chrono::Local::now().naive_local(),
+            start: now_seconds(),
             end: None,
             tag: tag.into(),
         };
@@ -122,7 +131,7 @@ impl TaskLog {
         let active = self.entries.iter_mut().find(|e| e.end.is_none());
         match active {
             Some(entry) => {
-                entry.end = Some(chrono::Local::now().naive_local());
+                entry.end = Some(now_seconds());
                 Ok(())
             }
             None => Err(TaktError::NoActiveTask),
