@@ -4,6 +4,22 @@ A time tracker that encourages focusing on one thing at a time.
 
 I work on a lot of different things at once — work, study, personal projects. takt tracks what I'm doing and for how long, with hierarchical tags and a human-readable storage format.
 
+## Install
+
+From [crates.io](https://crates.io/crates/takt):
+
+```
+cargo install takt
+```
+
+Via [Nix](https://nixos.org) (uses the repo's flake):
+
+```
+nix run github:kronberger-droid/takt
+```
+
+Prebuilt binaries for Linux (x86_64, aarch64), macOS (x86_64, aarch64), and Windows (x86_64) are attached to each [GitHub Release](https://github.com/kronberger-droid/takt/releases/latest).
+
 ## Data format
 
 ### Tags (`~/.local/share/takt/tags`)
