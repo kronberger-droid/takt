@@ -6,6 +6,8 @@ use thiserror::Error;
 pub enum TaktError {
     #[error("IO error: {0}")]
     Io(#[from] io::Error),
+    #[error("database error: {0}")]
+    Database(#[from] rusqlite::Error),
     #[error("could not locate a data directory (is $HOME set?)")]
     NoDataDir,
     #[error("unknown tag: {0}")]
