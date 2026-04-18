@@ -18,7 +18,7 @@ Via [Nix](https://nixos.org) (uses the repo's flake):
 nix run github:kronberger-droid/takt
 ```
 
-Prebuilt binaries for Linux (x86_64, aarch64), macOS (x86_64, aarch64), and Windows (x86_64) are attached to each [GitHub Release](https://github.com/kronberger-droid/takt/releases/latest).
+Prebuilt binaries for Linux (x86_64, aarch64), macOS (aarch64), and Windows (x86_64) are attached to each [GitHub Release](https://github.com/kronberger-droid/takt/releases/latest).
 
 ## Data format
 
