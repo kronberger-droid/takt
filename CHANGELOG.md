@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-04-18
+## [0.2.0] - 2026-04-18
+
+First public release. An earlier `v0.1.0` tag existed but never shipped due
+to a CI issue; its full feature set is included here.
 
 ### Added
 
@@ -15,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`takt start fix-bug` resolves to `work/project-x/fix-bug` when unique).
 - `takt start <tag>` — begin tracking a task, auto-stopping any active one.
 - `takt stop` — end the current task.
-- `takt status` — show the running task and elapsed time.
+- `takt status` — show the running task and elapsed time, or
+  "Not tracking anything." when idle.
 - `takt tag add <path>` and `takt tag list` — manage the tag tree.
 - `takt report this <day|week|month>` — time per tag for the current period.
 - `takt report last <n> <day|week|month>` — time per tag for the last N units.
@@ -29,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Structured error messages with 1-indexed line numbers for malformed tag and
   log files, including depth-jump detection that previously caused an infinite
   loop.
+- Internal `Store` trait with a `FlatStore` implementation, setting up future
+  database and remote backends without further changes to the CLI layer.
 
-[Unreleased]: https://github.com/kronberger-droid/takt/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/kronberger-droid/takt/releases/tag/v0.1.0
+[Unreleased]: https://github.com/kronberger-droid/takt/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/kronberger-droid/takt/releases/tag/v0.2.0
