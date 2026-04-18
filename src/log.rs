@@ -106,6 +106,10 @@ impl TaskLog {
         self.entries.iter().find(|e| e.end.is_none())
     }
 
+    pub fn entries(&self) -> &[Entry] {
+        &self.entries
+    }
+
     pub fn start(&mut self, tag: &str) -> Result<(), TaktError> {
         if self.active().is_some() {
             self.stop()?;
