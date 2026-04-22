@@ -59,8 +59,18 @@ impl SqliteStore {
         Ok(Self { conn, user_id })
     }
 
-    /// In-memory database for tests. Skips user-row creation —
-    /// callers can insert a users row if needed.
+    /// Ensure a user row exists for `user_id`, inserting a default one
+    /// if needed. Used by the server in the pre-auth phase.
+    pub fn ensure_default_user(&self) -> Result<(), TaktError> {
+        self.conn.execute(
+            "INSERT OR IGNORE INTO users (id, name, token) \
+             VALUES (?1, 'default', 'default')",
+            params![self.user_id],
+        )?;
+        Ok(())
+    }
+
+    /// In-memory database for tests.
     #[cfg(test)]
     pub fn new_in_memory(user_id: i64) -> Result<Self, TaktError> {
         let conn = Connection::open_in_memory()?;

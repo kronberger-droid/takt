@@ -67,9 +67,13 @@ state and next step:
    responds 404, shuts down cleanly on Ctrl+C or SIGTERM. The `server::run`
    function is async; `main.rs` calls it via `tokio::runtime::Runtime::new()?
    .block_on(...)` so only this subcommand touches async.
-2. **One endpoint (no auth) → `GET /status`.** Next step. The goal is to wire
-   a handler that reads from `SqliteStore` and returns JSON. This proves the
-   handler → store plumbing end-to-end before adding auth.
+2. **One endpoint (no auth) → `GET /status` — ⏳ in progress.** Boilerplate
+   is wired: `server::run` accepts a DB path, creates `Arc<Mutex<SqliteStore>>`
+   with a default user, routes `GET /status` to `status_handler`. `serde` +
+   `serde_json` added to deps, `Entry` derives `Serialize`, chrono has its
+   `serde` feature enabled. **What's left:** define `StatusResponse` fields
+   and implement `status_handler` body (both marked `TODO` in
+   `src/server/mod.rs`).
 3. **Bearer-token middleware.** Add a middleware layer that reads
    `Authorization: Bearer <token>`, looks up the user via
    `SELECT id FROM users WHERE token = ?`, and attaches `user_id` to request
@@ -85,13 +89,11 @@ state and next step:
 
 1. `git pull` on main.
 2. `cargo test` — expect 48/48 green.
-3. `cargo run -- serve --port 18080` — should print "listening on
-   127.0.0.1:18080" and sit idle.
-4. `curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:18080/` — should
-   print `404` (empty router).
-5. Kill the server with Ctrl+C — should print "takt serve: shutting down".
-
-If all that works, you're in a consistent state. Next task: wire `GET /status`.
+3. Open `src/server/mod.rs` — two `TODO` markers to fill in:
+   - `StatusResponse` struct fields (line ~20).
+   - `status_handler` body (line ~47).
+4. Once filled in, `cargo run -- serve --port 18080` and
+   `curl http://127.0.0.1:18080/status` should return JSON.
 
 ### Design calls already locked in (don't re-litigate)
 

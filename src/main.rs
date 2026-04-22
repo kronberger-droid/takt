@@ -41,7 +41,7 @@ enum Commands {
         #[command(subcommand)]
         range: Option<ReportRange>,
     },
-    /// Run the HTTP server (v0.3 Phase 2: empty router, no endpoints yet)
+    /// Run the HTTP server
     Serve {
         #[arg(long, default_value = "8080")]
         port: u16,
@@ -105,11 +105,10 @@ fn run() -> Result<(), TaktError> {
             print!("{}", report.display());
         }
         Commands::Serve { port, addr } => {
-            // Bridge sync CLI → async server: spin up a tokio runtime just
-            // for the serve command. The rest of the CLI stays sync.
             let socket = std::net::SocketAddr::new(addr, port);
+            let db_path = data_dir()?.join("takt.db");
             let runtime = tokio::runtime::Runtime::new()?;
-            runtime.block_on(server::run(socket))?;
+            runtime.block_on(server::run(socket, &db_path))?;
         }
         Commands::Tag { action } => match action {
             TagCommands::Add { path } => {

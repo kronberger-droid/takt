@@ -1,25 +1,35 @@
 //! HTTP server for `takt serve`. Wraps a `SqliteStore` and exposes the
 //! `Store` operations as JSON endpoints. All request-handling code lives
 //! here; the CLI in `main.rs` just spins up a runtime and calls `run`.
-//!
-//! Phase 2 of v0.3 will add:
-//!   - Handlers for every `Store` verb under `/start`, `/stop`, `/status`,
-//!     `/report`, `/tags`.
-//!   - Bearer-token middleware that resolves a `user_id` from the DB and
-//!     attaches it to request extensions.
-//!   - `Arc<Mutex<SqliteStore>>` as shared state (single-writer is fine for
-//!     v0.3's personal-server scale).
 
-use std::net::SocketAddr;
+use std::{
+    net::SocketAddr,
+    path::Path,
+    sync::{Arc, Mutex},
+};
 
-use axum::Router;
+use axum::{Json, Router, extract::State, http::StatusCode, routing::get};
+use serde::Serialize;
 
-use crate::error::TaktError;
+use crate::{error::TaktError, store::{SqliteStore, Store}};
 
-/// Start an HTTP server on `addr` and block until shutdown.
-/// Currently an empty router — `/` returns 404, nothing else is wired up.
-pub async fn run(addr: SocketAddr) -> Result<(), TaktError> {
-    let app = Router::new();
+type SharedStore = Arc<Mutex<SqliteStore>>;
+
+// TODO: define StatusResponse fields (what JSON shape should GET /status return?)
+#[derive(Serialize)]
+struct StatusResponse {
+}
+
+/// Start an HTTP server on `addr`, backed by a SQLite database at `db_path`.
+/// Blocks until shutdown (Ctrl+C / SIGTERM).
+pub async fn run(addr: SocketAddr, db_path: &Path) -> Result<(), TaktError> {
+    let store = SqliteStore::open(db_path, 1)?;
+    store.ensure_default_user()?;
+    let shared: SharedStore = Arc::new(Mutex::new(store));
+
+    let app = Router::new()
+        .route("/status", get(status_handler))
+        .with_state(shared);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     println!("takt serve: listening on {addr}");
@@ -29,6 +39,13 @@ pub async fn run(addr: SocketAddr) -> Result<(), TaktError> {
         .await?;
 
     Ok(())
+}
+
+async fn status_handler(
+    State(_store): State<SharedStore>,
+) -> Result<Json<StatusResponse>, StatusCode> {
+    // TODO: query _store.lock() and build a StatusResponse
+    todo!()
 }
 
 /// Resolves when the user sends Ctrl+C or the process receives SIGTERM.
